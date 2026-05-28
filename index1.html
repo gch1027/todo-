@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Todo</title>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #f0f2f5;
+  color: #1a1a1a;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  padding: 60px 20px;
+}
+
+.app {
+  width: 100%;
+  max-width: 500px;
+}
+
+h1 {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 32px;
+  letter-spacing: -0.5px;
+}
+
+.input-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.input-row input {
+  flex: 1;
+  padding: 12px 16px;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 15px;
+  outline: none;
+  transition: border-color 0.2s;
+  background: #fff;
+}
+
+.input-row input:focus {
+  border-color: #4f6ef7;
+}
+
+.input-row button {
+  padding: 12px 24px;
+  background: #4f6ef7;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.input-row button:hover {
+  background: #3d5bd9;
+}
+
+.input-row button:active {
+  transform: scale(0.97);
+}
+
+.toolbar {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.toolbar button {
+  padding: 6px 14px;
+  border: 1.5px solid #d0d0d0;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  background: #fff;
+  color: #555;
+  transition: all 0.15s;
+}
+
+.toolbar button:hover {
+  border-color: #4f6ef7;
+  color: #4f6ef7;
+}
+
+.toolbar button.active {
+  background: #4f6ef7;
+  color: #fff;
+  border-color: #4f6ef7;
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: #fff;
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  transition: box-shadow 0.2s, transform 0.15s;
+  animation: slideIn 0.2s ease;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideOut {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(40px); }
+}
+
+.list li.removing {
+  animation: slideOut 0.2s ease forwards;
+}
+
+.list li:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.list li .checkbox {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #ccc;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.list li .checkbox:hover {
+  border-color: #4f6ef7;
+}
+
+.list li.done .checkbox {
+  background: #4f6ef7;
+  border-color: #4f6ef7;
+}
+
+.list li.done .checkbox::after {
+  content: '✓';
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.list li .text {
+  flex: 1;
+  font-size: 15px;
+  word-break: break-word;
+}
+
+.list li.done .text {
+  text-decoration: line-through;
+  color: #aaa;
+}
+
+.list li .del {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: none;
+  color: #ccc;
+  font-size: 18px;
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.list li .del:hover {
+  color: #e55;
+  background: #fee;
+}
+
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16px;
+  padding: 0 4px;
+  font-size: 13px;
+  color: #888;
+}
+
+.footer button {
+  background: none;
+  border: none;
+  color: #888;
+  font-size: 13px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+}
+
+.footer button:hover {
+  color: #e55;
+  background: #fee;
+}
+
+.empty {
+  text-align: center;
+  color: #bbb;
+  padding: 40px 0;
+  font-size: 14px;
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <h1>Todo</h1>
+  <div class="input-row">
+    <input id="todoInput" type="text" placeholder="添加新任务..." maxlength="200">
+    <button id="addBtn">添加</button>
+  </div>
+  <div class="toolbar">
+    <button data-filter="all" class="active">全部</button>
+    <button data-filter="active">未完成</button>
+    <button data-filter="done">已完成</button>
+  </div>
+  <ul class="list" id="list"></ul>
+  <div class="footer">
+    <span id="counter"></span>
+    <button id="clearDone">清除已完成</button>
+  </div>
+</div>
+
+<script>
+const input   = document.getElementById('todoInput');
+const addBtn  = document.getElementById('addBtn');
+const list    = document.getElementById('list');
+const toolbar = document.querySelector('.toolbar');
+const counter = document.getElementById('counter');
+const clearDoneBtn = document.getElementById('clearDone');
+
+let filter = 'all';
+let todos = JSON.parse(localStorage.getItem('todos') || '[]');
+
+function save() {
+  localStorage.setItem('todos', JSON.stringify(todos));
+}
+
+function render() {
+  const filtered = todos.filter(t => {
+    if (filter === 'active') return !t.done;
+    if (filter === 'done')  return t.done;
+    return true;
+  });
+
+  list.innerHTML = '';
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty">暂无任务</div>';
+  } else {
+    filtered.forEach(t => {
+      const li = document.createElement('li');
+      if (t.done) li.classList.add('done');
+      li.innerHTML = `
+        <div class="checkbox"></div>
+        <span class="text">${escapeHtml(t.text)}</span>
+        <button class="del">×</button>
+      `;
+
+      li.querySelector('.checkbox').addEventListener('click', () => toggle(t.id));
+      li.querySelector('.del').addEventListener('click', () => remove(t.id, li));
+      li.querySelector('.text').addEventListener('dblclick', () => edit(t.id, li));
+
+      list.appendChild(li);
+    });
+  }
+
+  const activeCount = todos.filter(t => !t.done).length;
+  counter.textContent = activeCount === 0 ? '全部完成 ✓' : `${activeCount} 项未完成`;
+  clearDoneBtn.style.display = todos.some(t => t.done) ? '' : 'none';
+}
+
+function add() {
+  const text = input.value.trim();
+  if (!text) return;
+  todos.push({ id: Date.now(), text, done: false });
+  input.value = '';
+  save();
+  render();
+  input.focus();
+}
+
+function toggle(id) {
+  const t = todos.find(t => t.id === id);
+  if (t) { t.done = !t.done; save(); render(); }
+}
+
+function remove(id, li) {
+  li.classList.add('removing');
+  li.addEventListener('animationend', () => {
+    todos = todos.filter(t => t.id !== id);
+    save();
+    render();
+  }, { once: true });
+}
+
+function edit(id, li) {
+  const t = todos.find(t => t.id === id);
+  if (!t || t.done) return;
+
+  const span = li.querySelector('.text');
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.value = t.text;
+  input.style.cssText = 'flex:1;padding:4px 8px;border:2px solid #4f6ef7;border-radius:6px;font-size:15px;outline:none;';
+
+  span.replaceWith(input);
+  input.focus();
+  input.select();
+
+  const finish = (save_) => {
+    const newText = input.value.trim();
+    if (save_ && newText) {
+      t.text = newText;
+    } else if (save_ && !newText) {
+      return;
+    }
+    const newSpan = document.createElement('span');
+    newSpan.classList.add('text');
+    newSpan.textContent = t.text;
+    if (t.done) newSpan.style.textDecoration = 'line-through';
+    newSpan.addEventListener('dblclick', () => edit(t.id, li));
+    input.replaceWith(newSpan);
+    if (save_ && newText) { save(); render(); }
+  };
+
+  input.addEventListener('blur',  () => finish(true));
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') finish(true);
+    if (e.key === 'Escape') finish(false);
+  });
+}
+
+function clearDone() {
+  todos = todos.filter(t => !t.done);
+  save();
+  render();
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+addBtn.addEventListener('click', add);
+input.addEventListener('keydown', e => { if (e.key === 'Enter') add(); });
+
+toolbar.addEventListener('click', e => {
+  if (e.target.tagName !== 'BUTTON') return;
+  filter = e.target.dataset.filter;
+  toolbar.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+  render();
+});
+
+clearDoneBtn.addEventListener('click', clearDone);
+
+render();
+</script>
+</body>
+</html>
